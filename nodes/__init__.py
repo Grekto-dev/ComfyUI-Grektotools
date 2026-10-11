@@ -1,1 +1,1 @@
-# Módulos de nós do ComfyUI-Grektotools
+# ComfyUI-Grektotools node modules

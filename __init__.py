@@ -1,6 +1,6 @@
 """
 ComfyUI-Grektotools
-Coleção modular de nós personalizados para o ComfyUI desenvolvida por Grekto.
+Modular collection of custom nodes for ComfyUI developed by Grekto.
 """
 
 import importlib
@@ -9,11 +9,11 @@ import os
 NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
 
-# Diretório onde os módulos de nós ficam localizados
+# Directory where node modules are located
 nodes_dir = os.path.join(os.path.dirname(__file__), "nodes")
 
 if os.path.exists(nodes_dir):
-    # Percorre automaticamente todos os arquivos .py dentro de 'nodes'
+    # Automatically scan and import all .py modules within 'nodes'
     for root, _, files in os.walk(nodes_dir):
         for file in sorted(files):
             if file.endswith(".py") and not file.startswith("__"):
@@ -26,6 +26,6 @@ if os.path.exists(nodes_dir):
                     if hasattr(module, "NODE_DISPLAY_NAME_MAPPINGS"):
                         NODE_DISPLAY_NAME_MAPPINGS.update(module.NODE_DISPLAY_NAME_MAPPINGS)
                 except Exception as e:
-                    print(f"[ComfyUI-Grektotools] Erro ao carregar módulo {mod_name}: {e}")
+                    print(f"[ComfyUI-Grektotools] Error loading module {mod_name}: {e}")
 
 __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS"]

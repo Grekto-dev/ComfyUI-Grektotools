@@ -2,9 +2,9 @@ import os
 import sys
 from typing import Any, Tuple, Dict, Union
 
-# Tipo AnyType que aceita conexão com qualquer tipo de nó no ComfyUI
+# AnyType accepts connections from any ComfyUI node type
 class AnyType(str):
-    """Permite que o socket de entrada aceite conexões de qualquer tipo de nó."""
+    """Allows the input socket to accept connections from any ComfyUI node type."""
     def __ne__(self, __value: object) -> bool:
         return False
     def __eq__(self, __value: object) -> bool:
@@ -14,16 +14,16 @@ any_type = AnyType("*")
 
 
 def resolve_path(p: str) -> str:
-    """Resolve caminhos relativos, anotações de pasta do ComfyUI e normaliza barras."""
+    """Resolves relative paths, ComfyUI folder annotations, and normalizes path separators."""
     if not p:
         return ""
     p = str(p).strip().strip('"\'')
     
-    # 1. Se já for um arquivo existente absoluto ou relativo direto
+    # 1. Direct existing file check (absolute or relative)
     if os.path.isfile(p):
         return os.path.abspath(p).replace("\\", "/")
         
-    # 2. Verificar anotações do ComfyUI como "video.mp4 [input]" ou "video.mp4 [output]"
+    # 2. Check ComfyUI annotations like "video.mp4 [input]" or "video.mp4 [output]"
     try:
         import folder_paths
         annotated = folder_paths.get_annotated_filepath(p)
@@ -32,7 +32,7 @@ def resolve_path(p: str) -> str:
     except Exception:
         pass
         
-    # 3. Tentar encontrar nas pastas padrão do ComfyUI (input, output, temp)
+    # 3. Check default ComfyUI directories (input, output, temp)
     try:
         import folder_paths
         for base in [
@@ -47,22 +47,22 @@ def resolve_path(p: str) -> str:
     except Exception:
         pass
         
-    # Retorna o caminho absoluto normalizado
+    # Return normalized absolute path
     return os.path.abspath(p).replace("\\", "/")
 
 
 def extract_file_path(obj: Any) -> str:
-    """Extrai o caminho de arquivo a partir de praticamente qualquer objeto do ComfyUI."""
+    """Extracts a file path from virtually any ComfyUI object representation."""
     if obj is None:
         return ""
         
-    # 1. String ou Path
+    # 1. String or PathLike
     if isinstance(obj, (str, os.PathLike)):
         clean = str(obj).strip().strip('"\'')
         if clean:
             return resolve_path(clean)
             
-    # 2. Objeto de Vídeo nativo do ComfyUI (ex: VideoFromFile, VideoInput da API moderna)
+    # 2. Native ComfyUI Video object (e.g. VideoFromFile, VideoInput)
     if hasattr(obj, "get_stream_source") and callable(obj.get_stream_source):
         try:
             stream_src = obj.get_stream_source()
@@ -71,7 +71,7 @@ def extract_file_path(obj: Any) -> str:
         except Exception:
             pass
 
-    # Checar atributos comuns onde nós e bibliotecas guardam caminhos
+    # Check common attributes where nodes and libraries store file paths
     for attr in [
         "_file", "file", "path", "filename", "filepath", "video_path",
         "audio_path", "source_file", "_VideoFromFile__file"
@@ -80,7 +80,7 @@ def extract_file_path(obj: Any) -> str:
         if val and isinstance(val, (str, os.PathLike)):
             return resolve_path(str(val))
 
-    # Checar cache interno do comfy_extras.nodes_video se disponível
+    # Check internal cache of comfy_extras.nodes_video if available
     try:
         from comfy_extras.nodes_video import _preview_results
         if obj in _preview_results:
@@ -90,7 +90,7 @@ def extract_file_path(obj: Any) -> str:
     except Exception:
         pass
 
-    # 3. Dicionários (ex: retornos de áudio, metadados de output, wrappers)
+    # 3. Dictionaries (e.g. audio returns, output metadata, wrappers)
     if isinstance(obj, dict):
         for key in ["fullpath", "path", "filename", "file", "video", "audio", "image", "filepath", "source"]:
             if key in obj and obj[key]:
@@ -98,7 +98,7 @@ def extract_file_path(obj: Any) -> str:
                 if cand:
                     return cand
 
-        # Formato de imagem/vídeo salvo pelo ComfyUI: {"filename": "...", "subfolder": "...", "type": "output"}
+        # ComfyUI image/video save metadata: {"filename": "...", "subfolder": "...", "type": "output"}
         if "filename" in obj and ("subfolder" in obj or "type" in obj):
             fn = obj["filename"]
             sf = obj.get("subfolder", "")
@@ -116,14 +116,14 @@ def extract_file_path(obj: Any) -> str:
             except Exception:
                 pass
 
-    # 4. Listas ou Tuplas (ex: VHS_FILENAMES: (save_output, [paths]), ou listas de arquivos)
+    # 4. Lists or Tuples (e.g. VHS_FILENAMES: (save_output, [paths]), or lists of files)
     if isinstance(obj, (list, tuple)):
-        # Primeiro tenta achar algum item que resulte em arquivo existente
+        # First try to find any item that immediately resolves to an existing file
         for item in obj:
             cand = extract_file_path(item)
             if cand and os.path.isfile(cand):
                 return cand
-        # Se nenhum arquivo existir imediatamente no disco, pega o primeiro caminho não vazio
+        # If no file exists immediately on disk, return the first non-empty path
         for item in obj:
             cand = extract_file_path(item)
             if cand:
@@ -134,9 +134,9 @@ def extract_file_path(obj: Any) -> str:
 
 class GetPathNode:
     """
-    Nó 'Get Path' do ComfyUI-Grektotools.
-    Aceita qualquer entrada referente a um arquivo (VIDEO nativo, AUDIO, IMAGE, VHS_FILENAMES, STRING, etc.)
-    e extrai o caminho absoluto do arquivo pronto para conectar no 'Load Video (Path)' ou qualquer nó de arquivo.
+    'Get Path' node for ComfyUI-Grektotools.
+    Accepts any input referring to a file (native VIDEO, AUDIO, IMAGE, VHS_FILENAMES, STRING, etc.)
+    and extracts the verified absolute file path ready to connect into 'Load Video (Path)' or file loaders.
     """
     
     @classmethod
@@ -147,14 +147,14 @@ class GetPathNode:
                 "source": (
                     any_type,
                     {
-                        "tooltip": "Conecte qualquer saída que represente um arquivo (VIDEO nativo, AUDIO, VHS_FILENAMES, STRING, etc.)"
+                        "tooltip": "Connect any output representing a file (native VIDEO, AUDIO, VHS_FILENAMES, STRING, etc.)"
                     }
                 ),
                 "manual_path": (
                     "STRING",
                     {
                         "default": "",
-                        "tooltip": "Ou digite/cole manualmente o caminho ou nome do arquivo aqui (caso não use a conexão)"
+                        "tooltip": "Or manually enter/paste the file path or filename here (if not using the connection)"
                     }
                 ),
             }
@@ -167,16 +167,15 @@ class GetPathNode:
 
     @classmethod
     def VALIDATE_INPUTS(cls, **kwargs) -> bool:
-        # Permite validação dinâmica de qualquer tipo sem travar o prompt antes de rodar
         return True
 
     def get_path(self, source: Any = None, manual_path: str = "") -> Dict[str, Any]:
-        # 1. Prioriza a conexão 'source' se foi conectada
+        # 1. Prioritize 'source' connection if connected
         path = ""
         if source is not None:
             path = extract_file_path(source)
             
-        # 2. Se a conexão não gerou caminho ou não foi ligada, usa manual_path
+        # 2. If connection yielded no path or was not connected, use manual_path
         if not path and manual_path:
             path = extract_file_path(manual_path)
 
@@ -185,9 +184,9 @@ class GetPathNode:
         exists = os.path.isfile(path) if path else False
 
         if path:
-            print(f"[Grektotools - Get Path] Arquivo detectado: {path} (Existe no disco: {exists})")
+            print(f"[Grektotools - Get Path] Detected file: {path} (Exists on disk: {exists})")
         else:
-            print("[Grektotools - Get Path] Nenhum caminho de arquivo foi identificado na entrada.")
+            print("[Grektotools - Get Path] No valid file path was identified from input.")
 
         return {
             "ui": {"text": [path]},

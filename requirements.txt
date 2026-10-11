@@ -1,2 +1,2 @@
 # ComfyUI-Grektotools
-# Nós utilitários com suporte nativo ao ComfyUI
+# Utility nodes with native ComfyUI support
