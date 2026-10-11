@@ -1,0 +1,18 @@
+[project]
+name = "comfyui-grektotools"
+version = "1.0.0"
+description = "Coleção de nós utilitários e pontes de compatibilidade para ComfyUI por Grekto"
+authors = [
+    { name = "Grekto-dev" }
+]
+readme = "README.md"
+license = { text = "MIT License" }
+dependencies = []
+
+[project.urls]
+Repository = "https://github.com/Grekto-dev/ComfyUI-Grektotools"
+
+[tool.comfy]
+PublisherId = "grekto"
+DisplayName = "ComfyUI-Grektotools"
+Icon = ""
